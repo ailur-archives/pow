@@ -8,8 +8,9 @@ import (
 
 func main() {
 	fmt.Println("HashCash online! (no, curious console-dweller, this isn't a cryptocurrency miner)")
-	fmt.Println("Beginning proof of work (this may take a while)...")
-	pow := hashcash.New(20, 16, "I love burgernotes!")
+	extra := js.Global().Get("resourceExtra").String()
+	fmt.Println("Beginning proof of work on " + extra + "(this may take a while)...")
+	pow := hashcash.New(20, 16, extra)
 	stamp, err := pow.Mint("signup")
 	if err != nil {
 		js.Global().Set("returnVar", js.ValueOf(err.Error()))
