@@ -1,4 +1,4 @@
-module concord.hectabit.org/Hectabit/hashcat-wasm
+module concord.hectabit.org/Hectabit/hashcash-wasm
 
 go 1.22.5
 
