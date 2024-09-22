@@ -1,4 +1,4 @@
-module git.ailur.dev/ailur/pow
+module git.ailur.dev/ailur/pow-argon2
 
 go 1.23.0
 
