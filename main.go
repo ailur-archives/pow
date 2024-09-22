@@ -1,27 +1,27 @@
 package main
 
 import (
+	"git.ailur.dev/ailur/pow/library"
+
 	"fmt"
-	"github.com/catalinc/hashcash"
 	"syscall/js"
 )
 
 func main() {
-	fmt.Println("HashCash online! (no, curious console-dweller, this isn't a cryptocurrency miner)")
-	extra := js.Global().Get("resourceExtra").String()
-	fmt.Println("Beginning proof of work on " + extra + "(this may take a while)...")
-	pow := hashcash.New(20, 16, extra)
-	stamp, err := pow.Mint("signup")
+	fmt.Println("Proof of work module online")
+	resource := js.Global().Get("resource").String()
+	difficulty := js.Global().Get("difficulty").Int()
+	fmt.Println("Beginning PoW with difficulty", difficulty, "and resource", resource)
+	result, err := library.PoW(uint64(difficulty), resource)
 	if err != nil {
-		js.Global().Set("returnVar", js.ValueOf(err.Error()))
-		js.Global().Set("returnCode", js.ValueOf(2))
-		fmt.Println("An error occurred whilst working:", err)
+		fmt.Println("Error:", err)
+		js.Global().Set("return", js.ValueOf(err.Error()))
+		js.Global().Set("returnCode", js.ValueOf(1))
 		js.Global().Call("WASMComplete")
 	} else {
-		js.Global().Set("returnVar", js.ValueOf(stamp))
+		fmt.Println("Result:", result)
+		js.Global().Set("return", js.ValueOf(result))
 		js.Global().Set("returnCode", js.ValueOf(0))
-		fmt.Println("Proof of work completed successfully:", stamp)
-		fmt.Println("Again, no, this isn't a Crypto miner. It's an anti-spam measure. I promise.")
 		js.Global().Call("WASMComplete")
 	}
 }
