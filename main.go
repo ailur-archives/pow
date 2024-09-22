@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git.ailur.dev/ailur/pow/library"
+	"git.ailur.dev/ailur/pow-argon2/library"
 
 	"fmt"
 	"syscall/js"
