@@ -31,7 +31,36 @@ func PoW(difficulty uint64, resource string) (string, error) {
 			difficultyString.WriteString("0")
 		}
 		if strings.HasPrefix(output, difficultyString.String()) {
-			return strconv.FormatUint(difficulty, 10) + ":" + strconv.FormatInt(initialTime, 10) + ":" + hex.EncodeToString(nonce[:]) + ":" + output, nil
+			return strconv.FormatUint(difficulty, 10) + ":" + strconv.FormatInt(initialTime, 10) + ":" + hex.EncodeToString(nonce[:]) + ":" + resource + ":", nil
 		}
+	}
+}
+
+func VerifyPoW(pow string) bool {
+	powSplit := strings.Split(pow, ":")
+	difficulty, err := strconv.ParseUint(powSplit[0], 10, 64)
+	if err != nil {
+		return false
+	}
+	timestamp, err := strconv.ParseInt(powSplit[1], 10, 64)
+	if err != nil {
+		return false
+	}
+	timestampBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timestampBytes, uint64(timestamp))
+	nonce, err := hex.DecodeString(powSplit[2])
+	if err != nil {
+		return false
+	}
+	resource := powSplit[3]
+	output := hex.EncodeToString(argon2.IDKey(nonce, bytes.Join([][]byte{timestampBytes, []byte(resource)}, []byte{}), 1, 64*1024, 4, 32))
+	var difficultyString strings.Builder
+	for range difficulty {
+		difficultyString.WriteString("0")
+	}
+	if strings.HasPrefix(output, difficultyString.String()) {
+		return true
+	} else {
+		return false
 	}
 }
