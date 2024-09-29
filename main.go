@@ -1,27 +1,71 @@
-package main
+package ailur_pow
 
 import (
-	"git.ailur.dev/ailur/pow-argon2/library"
+	"bytes"
+	"strconv"
+	"strings"
+	"time"
 
-	"fmt"
-	"syscall/js"
+	"crypto/rand"
+	"encoding/binary"
+	"encoding/hex"
+
+	"golang.org/x/crypto/argon2"
 )
 
-func main() {
-	fmt.Println("Proof of work module online")
-	resource := js.Global().Get("resource").String()
-	difficulty := js.Global().Get("difficulty").Int()
-	fmt.Println("Beginning PoW with difficulty", difficulty, "and resource", resource)
-	result, err := library.PoW(uint64(difficulty), resource)
+func PoW(difficulty uint64, resource string, wait int64) (string, error) {
+	for {
+		initialTime := time.Now().Unix()
+		var timestamp [8]byte
+		binary.LittleEndian.PutUint64(timestamp[:], uint64(initialTime))
+
+		var nonce [16]byte
+		_, err := rand.Read(nonce[:])
+		if err != nil {
+			return "", err
+		}
+
+		output := hex.EncodeToString(argon2.IDKey(nonce[:], bytes.Join([][]byte{timestamp[:], []byte(resource)}, []byte{}), 1, 64*1024, 4, 32))
+		var difficultyString strings.Builder
+		for range difficulty {
+			difficultyString.WriteString("0")
+		}
+		if strings.HasPrefix(output, difficultyString.String()) {
+			return strconv.FormatUint(difficulty, 10) + ":" + strconv.FormatInt(initialTime, 10) + ":" + hex.EncodeToString(nonce[:]) + ":" + resource + ":", nil
+		}
+
+		if wait > 0 {
+			// Wait for a while before trying again
+			time.Sleep(time.Duration(wait) * time.Millisecond)
+		}
+	}
+}
+
+func VerifyPoW(pow string) bool {
+	powSplit := strings.Split(pow, ":")
+	difficulty, err := strconv.ParseUint(powSplit[0], 10, 64)
 	if err != nil {
-		fmt.Println("Error:", err)
-		js.Global().Set("return", js.ValueOf(err.Error()))
-		js.Global().Set("returnCode", js.ValueOf(1))
-		js.Global().Call("WASMComplete")
+		return false
+	}
+	timestamp, err := strconv.ParseInt(powSplit[1], 10, 64)
+	if err != nil {
+		return false
+	}
+	timestampBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timestampBytes, uint64(timestamp))
+	nonce, err := hex.DecodeString(powSplit[2])
+	if err != nil {
+		return false
+	}
+	resource := powSplit[3]
+	output := hex.EncodeToString(argon2.IDKey(nonce, bytes.Join([][]byte{timestampBytes, []byte(resource)}, []byte{}), 1, 64*1024, 4, 32))
+	var difficultyString strings.Builder
+	for range difficulty {
+		difficultyString.WriteString("0")
+	}
+	if strings.HasPrefix(output, difficultyString.String()) {
+		return true
 	} else {
-		fmt.Println("Result:", result)
-		js.Global().Set("return", js.ValueOf(result))
-		js.Global().Set("returnCode", js.ValueOf(0))
-		js.Global().Call("WASMComplete")
+		return false
 	}
 }
