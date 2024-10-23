@@ -1,7 +1,8 @@
-package ailur_pow
+package main
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -68,4 +69,8 @@ func VerifyPoW(pow string) bool {
 	} else {
 		return false
 	}
+}
+
+func main() {
+	fmt.Println(PoW(2, "fg-auth-signup", 0))
 }
